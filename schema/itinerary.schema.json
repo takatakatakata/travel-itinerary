@@ -1,0 +1,27 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["summary", "days", "transport", "essentials", "links", "checks"],
+  "properties": {
+    "summary": {"type": "string"},
+    "days": {"type": "array", "items": {"type": "object", "additionalProperties": false, "required": ["date", "title", "items"], "properties": {
+      "date": {"type": "string"}, "title": {"type": "string"},
+      "items": {"type": "array", "items": {"type": "object", "additionalProperties": false, "required": ["time", "title", "place", "detail", "url", "kind"], "properties": {
+        "time": {"type": "string"}, "title": {"type": "string"}, "place": {"type": "string"}, "detail": {"type": "string"}, "url": {"type": "string"}, "kind": {"type": "string", "enum": ["move", "visit", "food", "stay", "other"]}
+      }}
+    }}}},
+    "transport": {"type": "array", "items": {"type": "object", "additionalProperties": false, "required": ["direction", "label", "selected", "alternatives", "note"], "properties": {
+      "direction": {"type": "string"}, "label": {"type": "string"},
+      "selected": {"$ref": "#/definitions/service"},
+      "alternatives": {"type": "array", "items": {"$ref": "#/definitions/service"}},
+      "note": {"type": "string"}
+    }}},
+    "essentials": {"type": "array", "items": {"type": "string"}},
+    "links": {"type": "array", "items": {"type": "object", "additionalProperties": false, "required": ["label", "url"], "properties": {"label": {"type": "string"}, "url": {"type": "string"}}}},
+    "checks": {"type": "array", "items": {"type": "string"}}
+  },
+  "definitions": {"service": {"type": "object", "additionalProperties": false, "required": ["name", "departure", "arrival", "sourceUrl", "verifiedOn", "status"], "properties": {
+    "name": {"type": "string"}, "departure": {"type": "string"}, "arrival": {"type": "string"}, "sourceUrl": {"type": "string"}, "verifiedOn": {"type": "string"}, "status": {"type": "string", "enum": ["verified", "provided", "unverified"]}
+  }}}
+}

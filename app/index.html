@@ -1,0 +1,8 @@
+<!doctype html>
+<html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="color-scheme" content="light"><title>SHIORI — 旅を、見やすく。</title><link rel="stylesheet" href="/app.css"></head>
+<body><div class="shell">
+  <aside class="sidebar" id="sidebar"><div class="logo"><div class="logo-mark">S<span>.</span></div><div><strong>SHIORI</strong><small>旅を、見やすく。</small></div></div><div class="side-label">WORKSPACE</div><button class="create-btn" id="new-project">＋ <span>新しい旅を作成</span></button><div class="side-label projects-label">YOUR TRIPS</div><nav id="project-list" aria-label="旅行プロジェクト"></nav><div class="sidebar-bottom"><span class="status-dot"></span> LOCAL WORKSPACE</div></aside>
+  <div class="main-wrap"><header class="topbar"><button class="menu-btn" id="menu" aria-label="メニューを開く">☰</button><div class="breadcrumb"><span>WORKSPACE</span><span class="slash">/</span><strong id="crumb">旅の一覧</strong></div><span class="topbar-right">TRAVEL PLANNER <span class="topbar-star">✳</span></span></header><main id="main"></main></div>
+</div><div class="overlay hidden" id="overlay"></div>
+<dialog id="create-dialog"><form method="dialog" id="create-form"><button class="dialog-close" value="cancel" aria-label="閉じる">×</button><span class="eyebrow">NEW JOURNEY</span><h2>次の旅をはじめよう。</h2><p>タイトルをつけて、旅の計画をまとめましょう。</p><label for="new-title">旅行タイトル</label><input id="new-title" name="title" maxlength="100" required placeholder="例：秋の京都、ふたり旅"><div class="dialog-actions"><button class="btn ghost" value="cancel">キャンセル</button><button class="btn primary" id="create-submit" value="create">作成する →</button></div></form></dialog>
+<script type="module" src="/app.js"></script></body></html>
