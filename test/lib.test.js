@@ -35,14 +35,22 @@ test('各移動の時刻表をタイムラインに置き、入力リンクと H
   assert.equal(safeUrl('data:text/html,hello'), '');
 });
 
-test('曖昧な時刻、変更された固定時刻、時刻表なしの定期交通を拒否する', () => {
+test('曖昧な時刻と変更された固定時刻を拒否し、出典のない時刻は提案として残す', () => {
   const p = project();
   const vague = sample(); vague.days[0].items[1].time = '午前';
   assert.throws(() => validateItinerary(vague, p), /HH:MM/);
   const changed = sample(); changed.days[0].items[0].time = '08:10';
   assert.throws(() => validateItinerary(changed, p), /08:00/);
   const noLink = sample(); noLink.days[0].items[1].timetableUrl = '';
-  assert.throws(() => validateItinerary(noLink, p), /時刻表リンク/);
+  noLink.days[0].items[1].timeSource = 'researched';
+  validateItinerary(noLink, p);
+  assert.equal(noLink.days[0].items[1].timeSource, 'planned');
+  assert.match(noLink.checks.join(' '), /バスで移動.*公開時刻表/);
+  assert.match(renderItinerary(p, noLink), /時刻表未確認/);
+  const noSource = sample(); noSource.days[0].items[2].timeSource = 'researched'; noSource.days[0].items[2].title = '観光地で散策';
+  validateItinerary(noSource, p);
+  assert.equal(noSource.days[0].items[2].timeSource, 'planned');
+  assert.match(noSource.checks.join(' '), /観光地.*確認先/);
   const mislabeled = sample(); mislabeled.days[0].items[0].timeSource = 'planned';
   validateItinerary(mislabeled, p);
   assert.equal(mislabeled.days[0].items[0].timeSource, 'fixed');

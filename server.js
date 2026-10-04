@@ -75,7 +75,7 @@ async function generate(project) {
 async function publish(relativePath) {
   const branch = (await execFileAsync('git', ['branch', '--show-current'], { cwd: root })).stdout.trim();
   if (branch !== 'main') throw new Error('公開は main ブランチで実行してください');
-  await execFileAsync('git', ['add', '--', relativePath], { cwd: root });
+  await execFileAsync('git', ['add', '-f', '--', relativePath], { cwd: root });
   try { await execFileAsync('git', ['commit', '--only', '-m', `Publish SHIORI ${relativePath.split('/')[2]}`, '--', relativePath], { cwd: root }); }
   catch (e) { if (!String(e.stdout || '').includes('nothing to commit')) throw e; }
   await execFileAsync('git', ['push', 'origin', branch], { cwd: root, timeout: 120000 });

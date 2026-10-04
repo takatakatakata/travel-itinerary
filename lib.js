@@ -50,9 +50,15 @@ export function validateItinerary(data, project) {
       previous = item.time;
       if (!['fixed', 'researched', 'planned'].includes(item.timeSource) || !['move', 'visit', 'food', 'stay', 'other'].includes(item.kind) || !['scheduled', 'walk', 'unscheduled', 'none'].includes(item.transportMode) || typeof item.title !== 'string') throw new Error('行程の形式が不正です');
       if (inputTimes.has(item.time)) item.timeSource = 'fixed';
-      if (item.kind === 'move' && item.transportMode === 'scheduled' && !safeUrl(item.timetableUrl)) throw new Error(`${item.title} の時刻表リンクがありません`);
+      if (item.kind === 'move' && item.transportMode === 'scheduled' && !safeUrl(item.timetableUrl)) {
+        if (item.timeSource === 'researched') item.timeSource = 'planned';
+        data.checks.push(`${day.date} ${item.time}「${item.title}」：公開時刻表を確認できませんでした。運行事業者の公式案内で便と時刻を確認してください。`);
+      }
       if (item.kind === 'move' && item.transportMode === 'none') throw new Error('移動の交通手段を指定してください');
-      if (item.timeSource === 'researched' && !safeUrl(item.timetableUrl) && !safeUrl(item.url)) throw new Error('調査した時刻には情報源リンクが必要です');
+      if (item.timeSource === 'researched' && !safeUrl(item.timetableUrl) && !safeUrl(item.url)) {
+        item.timeSource = 'planned';
+        data.checks.push(`${day.date} ${item.time}「${item.title}」：時刻の確認先が見つかりませんでした。現地の公式案内で確認してください。`);
+      }
     }
   }
   return data;
@@ -69,7 +75,7 @@ const link = (url, label, className = '') => safeUrl(url) ? `<a class="${classNa
 const textOr = (value, fallback = '要確認') => escapeHtml(value || fallback);
 const sourceLabel = { fixed: '入力確定', researched: '時刻表・公式情報', planned: '提案時刻' };
 export function renderItinerary(project, data) {
-  const days = data.days.map((day, i) => `<section class="day" id="day-${i + 1}"><div class="day-head"><span>DAY ${String(i + 1).padStart(2, '0')}</span><h2>${textOr(day.date)} <small>${escapeHtml(day.title)}</small></h2></div><div class="timeline">${day.items.map(item => `<article class="event ${escapeHtml(item.kind)}"><div class="event-time"><time>${escapeHtml(item.time)}</time><span class="time-source ${escapeHtml(item.timeSource)}">${sourceLabel[item.timeSource]}</span></div><div class="event-body"><h3>${textOr(item.title)}</h3><p class="place">${textOr(item.place, '場所未定')}</p>${item.detail ? `<p>${escapeHtml(item.detail)}</p>` : ''}<div class="event-links">${item.kind === 'move' && item.transportMode === 'scheduled' ? link(item.timetableUrl, '時刻表を見る', 'timetable-link') : ''}${link(item.url, '予約・詳細を見る')}</div></div></article>`).join('')}</div></section>`).join('');
+  const days = data.days.map((day, i) => `<section class="day" id="day-${i + 1}"><div class="day-head"><span>DAY ${String(i + 1).padStart(2, '0')}</span><h2>${textOr(day.date)} <small>${escapeHtml(day.title)}</small></h2></div><div class="timeline">${day.items.map(item => `<article class="event ${escapeHtml(item.kind)}"><div class="event-time"><time>${escapeHtml(item.time)}</time><span class="time-source ${escapeHtml(item.timeSource)}">${sourceLabel[item.timeSource]}</span></div><div class="event-body"><h3>${textOr(item.title)}</h3><p class="place">${textOr(item.place, '場所未定')}</p>${item.detail ? `<p>${escapeHtml(item.detail)}</p>` : ''}<div class="event-links">${item.kind === 'move' && item.transportMode === 'scheduled' ? safeUrl(item.timetableUrl) ? link(item.timetableUrl, '時刻表を見る', 'timetable-link') : '<span class="source-missing">時刻表未確認</span>' : ''}${link(item.url, '関連情報を見る')}</div></div></article>`).join('')}</div></section>`).join('');
   const list = items => items.map(x => `<li>${escapeHtml(x)}</li>`).join('');
   const stays = project.lodgingMode === 'perNight' ? (project.lodgingByNight || []).map((value, i) => ({ label: `${i + 1}日目`, value })).filter(x => x.value) : project.lodgingSame ? [{ label: '全日程共通', value: project.lodgingSame }] : [];
   const lodging = stays.length ? `<section class="section"><span class="section-label">02 / STAY</span><h2>宿泊先</h2><div class="stay-list">${stays.map(stay => `<div class="stay-item"><strong>${escapeHtml(stay.label)}</strong><p>${escapeHtml(stay.value)}</p>${[...stay.value.matchAll(/https?:\/\/[^\s<>"'）】]+/g)].map((match, i) => link(match[0].replace(/[.,。、]+$/, ''), `宿泊先のリンク${i ? ` ${i + 1}` : ''}`)).join('')}</div>`).join('')}</div></section>` : '';
