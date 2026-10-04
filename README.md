@@ -23,6 +23,7 @@ npm start
 ## GitHub Pages の初期設定
 
 最初にこのリポジトリのコードを `main` にプッシュし、GitHub の **Settings → Pages → Build and deployment → Source** を **GitHub Actions** に設定してください。[`pages.yml`](.github/workflows/pages.yml) が `docs/` を公開します。公開 URL は通常 `https://takatakatakata.github.io/travel-itinerary/` です。公開反映には時間がかかることがあります。
+初回プッシュ時に Pages がまだ無効だった場合は、設定後に **Actions → Deploy SHIORI to GitHub Pages → Run workflow** を実行してください。
 
 GitHub Pages は静的ファイルの公開機能です。そのため、入力・Codex 生成・プロジェクト管理は Pages 上では動かず、このローカル管理画面で行います。生成されたページは `docs/trips/<プロジェクトID>/index.html` に作られます。
 

@@ -29,13 +29,18 @@ async function body(req) {
   for await (const chunk of req) { data += chunk; if (data.length > 50000) throw new Error('入力が大きすぎます'); }
   try { return JSON.parse(data || '{}'); } catch { throw new Error('JSON の形式が不正です'); }
 }
-async function pagesBase() {
+async function pagesInfo() {
   try {
     const { stdout } = await execFileAsync('git', ['remote', 'get-url', 'origin'], { cwd: root });
     const match = stdout.trim().match(/(?:github\.com[:/])([^/]+)\/([^/]+?)(?:\.git)?$/);
-    if (!match) return '';
-    return `https://${match[1]}.github.io/${match[2]}/`;
-  } catch { return ''; }
+    if (!match) return { pagesBase: '', pagesEnabled: null };
+    let pagesEnabled = null;
+    try {
+      const response = await fetch(`https://api.github.com/repos/${match[1]}/${match[2]}`, { headers: { accept: 'application/vnd.github+json', 'user-agent': 'SHIORI' }, signal: AbortSignal.timeout(3000) });
+      if (response.ok) pagesEnabled = Boolean((await response.json()).has_pages);
+    } catch {}
+    return { pagesBase: `https://${match[1]}.github.io/${match[2]}/`, pagesEnabled };
+  } catch { return { pagesBase: '', pagesEnabled: null }; }
 }
 function runCodex(args, prompt) {
   return new Promise((resolveRun, reject) => {
@@ -87,7 +92,7 @@ const server = http.createServer(async (req, res) => {
     if (!['GET','HEAD'].includes(req.method) && req.headers.origin && req.headers.origin !== `http://${host}:${port}`) return json(res, 403, { error: 'この画面から操作してください' });
     const url = new URL(req.url, `http://${host}:${port}`);
     const path = url.pathname;
-    if (req.method === 'GET' && path === '/api/meta') return json(res, 200, { pagesBase: await pagesBase(), codexAvailable: Boolean(process.env.PATH?.split(':').some(p => existsSync(join(p, 'codex')))) });
+    if (req.method === 'GET' && path === '/api/meta') return json(res, 200, { ...await pagesInfo(), codexAvailable: Boolean(process.env.PATH?.split(':').some(p => existsSync(join(p, 'codex')))) });
     if (req.method === 'GET' && path === '/api/projects') return json(res, 200, await load());
     if (req.method === 'POST' && path === '/api/projects') {
       const input = await body(req);
@@ -111,6 +116,7 @@ const server = http.createServer(async (req, res) => {
       }
       if (req.method === 'POST' && action === 'publish') {
         if (!project.generatedAt) throw new Error('先にしおりを作成してください');
+        if ((await pagesInfo()).pagesEnabled === false) throw new Error('GitHub の Settings → Pages で公開元を GitHub Actions に設定してください');
         if (publishing) return json(res, 409, { error: '公開処理中です' });
         publishing = true;
         try { await publish(`docs/trips/${id}/index.html`); project.publishedAt = new Date().toISOString(); await save(projects); return json(res, 200, project); }
