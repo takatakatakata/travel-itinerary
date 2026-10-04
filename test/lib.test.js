@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { newProject, validateProject, validateItinerary, preserveInputLinks, renderItinerary, safeUrl, validDate } from '../lib.js';
+import { newProject, validateProject, validateItinerary, preserveInputLinks, renderItinerary, safeUrl, validDate, tripNights } from '../lib.js';
 
 const sample = () => ({
   summary: '旅の計画',
@@ -43,4 +43,28 @@ test('曖昧な時刻、変更された固定時刻、時刻表なしの定期�
   assert.throws(() => validateItinerary(changed, p), /08:00/);
   const noLink = sample(); noLink.days[0].items[1].timetableUrl = '';
   assert.throws(() => validateItinerary(noLink, p), /時刻表リンク/);
+  const mislabeled = sample(); mislabeled.days[0].items[0].timeSource = 'planned';
+  validateItinerary(mislabeled, p);
+  assert.equal(mislabeled.days[0].items[0].timeSource, 'fixed');
+});
+
+test('宿泊先を泊数ごとに保存し、しおりで参照できる', () => {
+  assert.equal(tripNights('2026-10-04', '2026-10-06'), 2);
+  const p = validateProject({ startDate: '2026-10-04', endDate: '2026-10-06', lodgingMode: 'perNight', lodgingByNight: ['京都の宿 https://example.com/kyoto', '<b>大阪の宿</b>'], lodgingSame: '以前の共通宿' }, newProject('関西'));
+  const html = renderItinerary(p, sample());
+  assert.match(html, /1日目/);
+  assert.match(html, /2日目/);
+  assert.match(html, /京都の宿/);
+  assert.match(html, /href="https:\/\/example.com\/kyoto"/);
+  assert.match(html, /&lt;b&gt;大阪の宿&lt;\/b&gt;/);
+  assert.doesNotMatch(html, /以前の共通宿/);
+  const linked = preserveInputLinks(sample(), p);
+  assert.ok(linked.links.some(item => item.url === 'https://example.com/kyoto'));
+  assert.throws(() => validateProject({ lodgingMode: 'perNight', lodgingByNight: 'ホテル' }, p), /宿泊先の入力/);
+  const same = validateProject({ lodgingMode: 'same', lodgingSame: '共通ホテル' }, p);
+  assert.match(renderItinerary(same, sample()), /全日程共通/);
+  assert.match(renderItinerary(same, sample()), /共通ホテル/);
+  assert.doesNotMatch(renderItinerary(same, sample()), /大阪の宿/);
+  const fixedCheckIn = validateProject({ lodgingSame: '15:00 にチェックイン' }, same);
+  assert.throws(() => validateItinerary(sample(), fixedCheckIn), /15:00/);
 });
