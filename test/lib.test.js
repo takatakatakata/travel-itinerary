@@ -73,6 +73,11 @@ test('宿泊先を泊数ごとに保存し、しおりで参照できる', () =>
   assert.match(renderItinerary(same, sample()), /全日程共通/);
   assert.match(renderItinerary(same, sample()), /共通ホテル/);
   assert.doesNotMatch(renderItinerary(same, sample()), /大阪の宿/);
+  const breakfastHours = validateProject({ lodgingSame: '朝食は7:00～10:00。基本的には7:00とする。' }, same);
+  const breakfastPlan = sample();
+  validateItinerary(breakfastPlan, breakfastHours);
+  assert.match(renderItinerary(breakfastHours, breakfastPlan), /7:00～10:00/);
   const fixedCheckIn = validateProject({ lodgingSame: '15:00 にチェックイン' }, same);
-  assert.throws(() => validateItinerary(sample(), fixedCheckIn), /15:00/);
+  assert.doesNotThrow(() => validateItinerary(sample(), fixedCheckIn));
+  assert.match(renderItinerary(fixedCheckIn, sample()), /15:00 にチェックイン/);
 });

@@ -38,7 +38,8 @@ const normalizedTimes = text => [...String(text).matchAll(/\b(?:[01]?\d|2[0-3]):
 export function validateItinerary(data, project) {
   if (!data || typeof data !== 'object' || !Array.isArray(data.days) || !Array.isArray(data.essentials) || !Array.isArray(data.links) || !Array.isArray(data.checks) || typeof data.summary !== 'string') throw new Error('Codex の出力形式を確認できませんでした');
   if (!data.days.length || data.days.length > 32) throw new Error('日別行程の件数が不正です');
-  const inputTimes = new Set(normalizedTimes(`${project.outbound}\n${project.inbound}\n${lodgingText(project)}\n${project.todos}`));
+  const inputTimes = new Set(normalizedTimes(`${project.outbound}\n${project.inbound}\n${project.todos}`));
+  const fixedTimes = new Set([...inputTimes, ...normalizedTimes(lodgingText(project))]);
   const outputTimes = new Set(normalizedTimes(JSON.stringify(data)));
   for (const time of inputTimes) if (!outputTimes.has(time)) throw new Error(`入力された ${time} がしおりに残っていません`);
   for (const day of data.days) {
@@ -49,7 +50,7 @@ export function validateItinerary(data, project) {
       if (item.time < previous) throw new Error('タイムラインが時刻順ではありません');
       previous = item.time;
       if (!['fixed', 'researched', 'planned'].includes(item.timeSource) || !['move', 'visit', 'food', 'stay', 'other'].includes(item.kind) || !['scheduled', 'walk', 'unscheduled', 'none'].includes(item.transportMode) || typeof item.title !== 'string') throw new Error('行程の形式が不正です');
-      if (inputTimes.has(item.time)) item.timeSource = 'fixed';
+      if (fixedTimes.has(item.time)) item.timeSource = 'fixed';
       if (item.kind === 'move' && item.transportMode === 'scheduled' && !safeUrl(item.timetableUrl)) {
         if (item.timeSource === 'researched') item.timeSource = 'planned';
         data.checks.push(`${day.date} ${item.time}「${item.title}」：公開時刻表を確認できませんでした。運行事業者の公式案内で便と時刻を確認してください。`);
